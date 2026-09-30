@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>EduGenie - Learning Assistant</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <h1>EduGenie</h1>
+
+    <p>AI-Powered Learning Assistant</p>
+
+    <label for="task">Choose a task:</label>
+
+    <select id="task">
+        <option value="qa">Ask a Question</option>
+        <option value="explain">Explain a Topic</option>
+        <option value="quiz">Generate Quiz</option>
+        <option value="summarize">Summarize</option>
+        <option value="learn">Learning Path</option>
+    </select>
+
+    <br><br>
+
+    <textarea
+        id="inputText"
+        rows="8"
+        cols="60"
+        placeholder="Enter your question or topic here..."
+    ></textarea>
+
+    <br><br>
+
+    <button onclick="submitTask()">Submit</button>
+
+    <h2>Result</h2>
+
+    <div id="result"></div>
+
+
+    <script>
+
+        async function submitTask() {
+
+            const task = document.getElementById("task").value;
+            const input = document.getElementById("inputText").value;
+            const result = document.getElementById("result");
+
+            result.textContent = "Loading...";
+
+            let url = "";
+
+            if (task === "qa") {
+
+                url = `/qa?question=${encodeURIComponent(input)}`;
+
+            }
+
+            else if (task === "explain") {
+
+                url = `/explain?topic=${encodeURIComponent(input)}`;
+
+            }
+
+            else if (task === "quiz") {
+
+                url = `/quiz?topic=${encodeURIComponent(input)}`;
+
+            }
+
+            else if (task === "summarize") {
+
+                url = `/summarize?text=${encodeURIComponent(input)}`;
+
+            }
+
+            else if (task === "learn") {
+
+                url = `/learn/recommendations?topic=${encodeURIComponent(input)}`;
+
+            }
+
+
+            try {
+
+                const response = await fetch(url);
+
+                const data = await response.json();
+
+
+                if (task === "quiz") {
+
+                    let quizHTML =
+                        "<h3>Quiz: " + data.topic + "</h3>";
+
+                    data.quiz.forEach((q, index) => {
+
+                        quizHTML +=
+                            "<div class='question'>";
+
+                        quizHTML +=
+                            "<h4>" +
+                            (index + 1) +
+                            ". " +
+                            q.question +
+                            "</h4>";
+
+
+                        q.options.forEach((option) => {
+
+                            quizHTML +=
+                                "<p>" +
+                                "<input type='radio' " +
+                                "name='question" + index + "' " +
+                                "value='" + option + "'>" +
+                                " " +
+                                option +
+                                "</p>";
+
+                        });
+
+
+                        quizHTML += "</div>";
+
+                    });
+
+
+                    quizHTML +=
+                        "<br>" +
+                        "<button onclick='checkAnswers()'>" +
+                        "Check Answers" +
+                        "</button>";
+
+                    result.innerHTML = quizHTML;
+
+                    window.currentQuiz = data.quiz;
+
+                }
+
+                else {
+
+                    result.textContent =
+                        JSON.stringify(data, null, 2);
+
+                }
+
+            }
+
+            catch (error) {
+
+                result.textContent =
+                    "Error: " + error;
+
+            }
+
+        }
+
+
+        function checkAnswers() {
+
+            const quiz = window.currentQuiz;
+
+            if (!quiz) {
+
+                return;
+
+            }
+
+            let score = 0;
+
+            let reviewHTML = "";
+
+
+            quiz.forEach((question, index) => {
+
+                const selected =
+                    document.querySelector(
+                        `input[name="question${index}"]:checked`
+                    );
+
+
+                reviewHTML +=
+                    "<div class='answer-review'>";
+
+
+                reviewHTML +=
+                    "<h4>" +
+                    (index + 1) +
+                    ". " +
+                    question.question +
+                    "</h4>";
+
+
+                if (!selected) {
+
+                    reviewHTML +=
+                        "<p>❌ Not answered</p>";
+
+                    reviewHTML +=
+                        "<p><strong>Correct answer:</strong> " +
+                        question.answer +
+                        "</p>";
+
+                }
+
+                else if (selected.value === question.answer) {
+
+                    score++;
+
+                    reviewHTML +=
+                        "<p>✅ Correct!</p>";
+
+                }
+
+                else {
+
+                    reviewHTML +=
+                        "<p>❌ Incorrect</p>";
+
+                    reviewHTML +=
+                        "<p><strong>Your answer:</strong> " +
+                        selected.value +
+                        "</p>";
+
+                    reviewHTML +=
+                        "<p><strong>Correct answer:</strong> " +
+                        question.answer +
+                        "</p>";
+
+                }
+
+
+                reviewHTML += "</div>";
+
+            });
+
+
+            const result = document.getElementById("result");
+
+
+            const scoreHTML =
+                "<div class='score'>" +
+                "<h3>Your Score: " +
+                score +
+                " / " +
+                quiz.length +
+                "</h3>" +
+                "</div>";
+
+
+            result.innerHTML =
+                scoreHTML +
+                "<h3>Answer Review</h3>" +
+                reviewHTML;
+
+        }
+
+    </script>
+
+</body>
+
+</html>
